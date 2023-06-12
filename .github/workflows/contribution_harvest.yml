@@ -34,8 +34,9 @@ jobs:
 
       - name: Display contributors and update README
         run: |
-         awk 'BEGIN{ print "<table>" }{print "<tr><td> <a href=\"https://github.com/" $2 "\">" $2 "</a></td><td><img src=\"" $3 "\" width=\"100\" height=\"100\" /></td></tr>" }END{ print "</table>" }' contributors.md > CONTRIBUTORS.md
-         sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n$(cat CONTRIBUTORS.md)\n<!-- CONTRIBUTORS END -->' README.md
+          CONTRIBUTORS_TABLE=$(awk -F '|' '!/^$/ { printf "| %s | ![Contributor](https://github.com/%s.png?size=50) |\n", $2, $2 }' CONTRIBUTORS.md)
+          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n\n| Name | Image |\n| ---- | ---- |\n${CONTRIBUTORS_TABLE}\n\n<!-- CONTRIBUTORS END -->' README.md
+      
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
