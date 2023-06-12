@@ -6,16 +6,24 @@ on:
       - main
 
 jobs:
-  display-contributors:
+  checkout-repo:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+  install-jq:
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+  fetch-contributors:
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Fetch contributors
         id: contributors
         run: |
@@ -23,24 +31,20 @@ jobs:
           REPO=$(echo "${{ github.repository }}" | awk -F '/' '{print $2}')
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           CONTRIBUTORS_API="https://api.github.com/repos/${OWNER}/${REPO}/contributors"
-          curl -sSL -H "Authorization: token ${TOKEN}" "${CONTRIBUTORS_API}" | jq -r '.[] | "| [\(.login)](https://github.com/\(.login)) | <img src=\"\(.avatar_url)&s=100\" width=\"100\" height=\"100\" /> |"' | sort -u > contributors.md
-          echo "$(git config --get user.name)" >> contributors.md
+          echo "::set-output name=CONTRIBUTORS_TABLE::$(curl -sSL -H 'Authorization: token ${TOKEN}' '${CONTRIBUTORS_API}' | jq -r '.[] | "| [\(.login)](https://github.com/\(.login)) | <img src=\"\(.avatar_url)&s=100\" width=\"100\" height=\"100\" /> |"' | sort -u)"
 
+  display-contributors:
+    runs-on: ubuntu-latest
 
-      - name: Sort contributors
-        id: sorted-contributors
-        run: |
-          cat contributors.txt | sort > sorted_contributors.txt
-
+    steps:
       - name: Display contributors and update README
         run: |
-          CONTRIBUTORS_TABLE=$(awk -F '|' '!/^$/ { printf "| %s | ![Contributor](https://github.com/%s.png?size=50) |\n", $2, $2 }' CONTRIBUTORS.md)
-          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n\n| Name | Image |\n| ---- | ---- |\n${CONTRIBUTORS_TABLE}\n\n<!-- CONTRIBUTORS END -->' README.md
+          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n\n| Name | Image |\n| ---- | ---- |\n${{ needs.fetch-contributors.outputs.CONTRIBUTORS_TABLE }}\n\n<!-- CONTRIBUTORS END -->' README.md
       
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add CONTRIBUTORS.md README.md
+          git add README.md
           git commit -m "Update contributors in README"
           git push
