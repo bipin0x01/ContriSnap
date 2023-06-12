@@ -1,0 +1,17 @@
+# Ignore workflow-generated files
+/workflow-output/
+/workflow-results/
+
+# Ignore temporary or intermediate files
+*.tmp
+*.bak
+*.cache
+
+# Ignore environment-specific files
+.env
+.env.local
+.env.*.local
+
+# Ignore sensitive or private data
+secrets.yml
+private.key
