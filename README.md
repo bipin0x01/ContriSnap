@@ -4,7 +4,11 @@ ContriSnap is an efficient workflow that fetches and sorts contributors in your 
 ## Contributors
 
 <!-- CONTRIBUTORS START -->
-$(cat CONTRIBUTORS.md)
+
+| Name | Image |
+| ---- | ---- |
+${CONTRIBUTORS_TABLE}
+
 <!-- CONTRIBUTORS END -->
 
 ## License
