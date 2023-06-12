@@ -1,0 +1,52 @@
+name: ContriSnap
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  fetch-contributors:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Fetch contributors
+        id: contributors
+        run: |
+          git log --format='%aN' | sort -u > contributors.txt
+          echo "::set-output name=contributors_file::contributors.txt"
+
+  sort-contributors:
+    needs: fetch-contributors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Sort contributors
+        id: sorted-contributors
+        run: |
+          cat ${{ needs.fetch-contributors.outputs.contributors_file }} | sort > sorted_contributors.txt
+          echo "::set-output name=sorted_contributors_file::sorted_contributors.txt"
+
+  display-contributors:
+    needs: sort-contributors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Display contributors
+        id: display
+        run: |
+          cat ${{ needs.sort-contributors.outputs.sorted_contributors_file }} > contributors.txt
+          echo "::set-output name=contributors_file::contributors.txt"
+
+      - name: Update README
+        run: |
+          sed -i '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n| Name |\n| ---- |\n$(cat contributors.txt)\n| ---- |\n<!-- CONTRIBUTORS END -->' README.md
