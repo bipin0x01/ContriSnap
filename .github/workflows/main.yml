@@ -6,18 +6,20 @@ on:
       - main
 
 jobs:
-  fetch-contributors:
-    runs-on: ubuntu-latest
+fetch-contributors:
+  runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Fetch contributors
-        id: contributors
-        run: |
-          git log --format='%aN' | sort -u > contributors.txt
-          echo "CONTRIBUTORS_FILE=$(pwd)/contributors.txt" >> $GITHUB_ENV
+    - name: Fetch contributors
+      id: contributors
+      run: |
+        git log --format='%aN' | sort -u > contributors.txt
+        echo "$(git config --get user.name)" >> contributors.txt
+        echo "::set-output name=contributors_file::contributors.txt"
+
 
   sort-contributors:
     needs: fetch-contributors
