@@ -6,10 +6,6 @@ ContriSnap is an efficient workflow that fetches and sorts contributors in your 
 <!-- CONTRIBUTORS START -->
 <!-- CONTRIBUTORS END -->
 
-## Usage
-
-...
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
