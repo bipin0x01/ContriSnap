@@ -1,4 +1,4 @@
-name: ContriSnap
+name: ContributionHarvest
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
         id: contributors
         run: |
           git log --format='%aN' | sort -u > contributors.txt
-          echo "::set-output name=contributors_file::contributors.txt"
+          echo "CONTRIBUTORS_FILE=$(pwd)/contributors.txt" >> $GITHUB_ENV
 
   sort-contributors:
     needs: fetch-contributors
@@ -30,8 +30,8 @@ jobs:
       - name: Sort contributors
         id: sorted-contributors
         run: |
-          cat ${{ needs.fetch-contributors.outputs.contributors_file }} | sort > sorted_contributors.txt
-          echo "::set-output name=sorted_contributors_file::sorted_contributors.txt"
+          cat ${{ needs.fetch-contributors.outputs.CONTRIBUTORS_FILE }} | sort > sorted_contributors.txt
+          echo "SORTED_CONTRIBUTORS_FILE=$(pwd)/sorted_contributors.txt" >> $GITHUB_ENV
 
   display-contributors:
     needs: sort-contributors
@@ -44,8 +44,8 @@ jobs:
       - name: Display contributors
         id: display
         run: |
-          cat ${{ needs.sort-contributors.outputs.sorted_contributors_file }} | awk '{print "| " $$0 " |"}' > CONTRIBUTORS.md
-          echo "::set-output name=contributors_file::CONTRIBUTORS.md"
+          cat ${{ needs.sort-contributors.outputs.SORTED_CONTRIBUTORS_FILE }} | awk '{print "| " $$0 " |"}' > CONTRIBUTORS.md
+          echo "CONTRIBUTORS_FILE=$(pwd)/CONTRIBUTORS.md" >> $GITHUB_ENV
 
       - name: Update README
         run: |
