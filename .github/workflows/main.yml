@@ -1,4 +1,4 @@
-name: ContributionHarvest
+name: ContriSnap
 
 on:
   push:
@@ -44,9 +44,12 @@ jobs:
       - name: Display contributors
         id: display
         run: |
-          cat ${{ needs.sort-contributors.outputs.sorted_contributors_file }} > CONTRIBUTORS.md
+          cat ${{ needs.sort-contributors.outputs.sorted_contributors_file }} | awk '{print "| " $$0 " |"}' > CONTRIBUTORS.md
           echo "::set-output name=contributors_file::CONTRIBUTORS.md"
 
       - name: Update README
         run: |
-          sed -i '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n| Name |\n| ---- |\n$(cat CONTRIBUTORS.md)\n| ---- |\n<!-- CONTRIBUTORS END -->' README.md
+          cp CONTRIBUTORS.md contributors_temp.md
+          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/d' README.md
+          awk '/<!-- CONTRIBUTORS START -->/{print;system("cat contributors_temp.md");next}1' README.md > README_updated.md
+          mv README_updated.md README.md
