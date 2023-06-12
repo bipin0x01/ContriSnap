@@ -6,52 +6,40 @@ on:
       - main
 
 jobs:
-  fetch-contributors:
+  display-contributors:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Fetch contributors
         id: contributors
         run: |
-          git log --format='%aN' | sort -u > contributors.txt
+          OWNER=$(echo "${{ github.repository }}" | awk -F '/' '{print $1}')
+          REPO=$(echo "${{ github.repository }}" | awk -F '/' '{print $2}')
+          TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          CONTRIBUTORS_API="https://api.github.com/repos/${OWNER}/${REPO}/contributors"
+          curl -sSL -H "Authorization: token ${TOKEN}" "${CONTRIBUTORS_API}" | jq -r '.[].login' | sort -u > contributors.txt
           echo "$(git config --get user.name)" >> contributors.txt
-          echo "::set-output name=contributors_file::contributors.txt"
-
-
-  sort-contributors:
-    needs: fetch-contributors
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       - name: Sort contributors
         id: sorted-contributors
         run: |
-          cat ${{ needs.fetch-contributors.outputs.CONTRIBUTORS_FILE }} | sort > sorted_contributors.txt
-          echo "SORTED_CONTRIBUTORS_FILE=$(pwd)/sorted_contributors.txt" >> $GITHUB_ENV
+          cat contributors.txt | sort > sorted_contributors.txt
 
-  display-contributors:
-    needs: sort-contributors
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Display contributors
-        id: display
+      - name: Display contributors and update README
         run: |
-          cat ${{ needs.sort-contributors.outputs.SORTED_CONTRIBUTORS_FILE }} | awk '{print "| " $$0 " |"}' > CONTRIBUTORS.md
-          echo "CONTRIBUTORS_FILE=$(pwd)/CONTRIBUTORS.md" >> $GITHUB_ENV
+          cat sorted_contributors.txt | awk '{print "| " $$0 " |"}' > CONTRIBUTORS.md
+          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/c\<!-- CONTRIBUTORS START -->\n| Name |\n| ---- |\n$(cat CONTRIBUTORS.md)\n| ---- |\n<!-- CONTRIBUTORS END -->' README.md
 
-      - name: Update README
+      - name: Commit and push changes
         run: |
-          cp CONTRIBUTORS.md contributors_temp.md
-          sed -i -e '/<!-- CONTRIBUTORS START -->/,/<!-- CONTRIBUTORS END -->/d' README.md
-          awk '/<!-- CONTRIBUTORS START -->/{print;system("cat contributors_temp.md");next}1' README.md > README_updated.md
-          mv README_updated.md README.md
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add CONTRIBUTORS.md README.md
+          git commit -m "Update contributors in README"
+          git push
